@@ -13,6 +13,8 @@ export const DEFAULT_NODE_DISPLAY_NAME: Record<CanvasNodeType, string> = {
   [CANVAS_NODE_TYPES.group]: '分组',
   [CANVAS_NODE_TYPES.storyboardSplit]: '切割结果',
   [CANVAS_NODE_TYPES.storyboardGen]: '分镜生成',
+  [CANVAS_NODE_TYPES.director3d]: '3D Director',
+  [CANVAS_NODE_TYPES.vr360]: 'VR360',
 };
 
 export const EXPORT_RESULT_DISPLAY_NAME: Record<ExportImageNodeResultKind, string> = {

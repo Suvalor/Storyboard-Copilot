@@ -90,7 +90,9 @@
       "aiImageGeneration": "AI Image",
       "storyboard": "Storyboard Node",
       "storyboardGen": "Storyboard Generation",
-      "textAnnotation": "Text Annotation"
+      "textAnnotation": "Text Annotation",
+      "director3d": "3D Director",
+      "vr360": "VR360 Panorama"
     },
     "imageNode": {
       "title": "Image Node",
@@ -140,6 +142,48 @@
     "textAnnotation": {
       "placeholder": "Write Markdown text. It will render when unselected.",
       "empty": "Empty note"
+    },
+    "director3d": {
+      "uploadBackground": "Upload Background",
+      "backgroundLoaded": "Background loaded",
+      "cameraPresets": "Camera",
+      "mannequin": "Figure",
+      "poseStand": "Stand",
+      "poseSit": "Sit",
+      "poseLean": "Lean",
+      "poseLie": "Lie",
+      "props": "Props",
+      "export": "Export",
+      "exportViewport": "Viewport",
+      "exportDepth": "Depth",
+      "cameraFront": "Front",
+      "cameraRight": "Right",
+      "cameraBack": "Back",
+      "cameraLeft": "Left",
+      "cameraTop": "Top",
+      "cameraBottom": "Bottom",
+      "cameraThreeQuarter": "3/4 Angle",
+      "cameraCloseUp": "Close-up",
+      "cameraWide": "Wide",
+      "cameraDutch": "Dutch Angle",
+      "propCategoryIndoor": "Indoor Furniture",
+      "propCategoryOutdoor": "Outdoor Props",
+      "propCategoryAncient": "Ancient Props",
+      "propCategoryArchitecture": "Architecture",
+      "propCategoryDecoration": "Decoration",
+      "propCategoryGeometry": "Geometry"
+    },
+    "vr360": {
+      "uploadPanorama": "Upload Panorama",
+      "panoramaLoaded": "Panorama loaded",
+      "exitImmersive": "Exit Immersive",
+      "parallaxOn": "Parallax On",
+      "parallaxOff": "Parallax Off",
+      "immersiveMode": "Immersive Mode",
+      "export": "Export",
+      "exportSingle": "Single",
+      "export4Grid": "4-Grid",
+      "export12Grid": "12-Grid"
     }
   },
   "viewer": {
@@ -311,4 +355,3 @@
     "copyReport": "Copy error report"
   }
 }
-

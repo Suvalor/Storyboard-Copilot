@@ -12,11 +12,13 @@ import {
   type StoryboardGenNodeData,
   type TextAnnotationNodeData,
   type UploadImageNodeData,
+  type Director3dNodeData,
+  type Vr360NodeData,
 } from './canvasNodes';
 import { DEFAULT_NODE_DISPLAY_NAME } from './nodeDisplay';
 import { DEFAULT_IMAGE_MODEL_ID } from '../models';
 
-export type MenuIconKey = 'upload' | 'sparkles' | 'layout' | 'text';
+export type MenuIconKey = 'upload' | 'sparkles' | 'layout' | 'text' | 'cube' | 'vr';
 
 export interface CanvasNodeCapabilities {
   toolbar: boolean;
@@ -251,6 +253,52 @@ const storyboardGenNodeDefinition: CanvasNodeDefinition<StoryboardGenNodeData> =
   }),
 };
 
+const director3dNodeDefinition: CanvasNodeDefinition<Director3dNodeData> = {
+  type: CANVAS_NODE_TYPES.director3d,
+  menuLabelKey: 'node.menu.director3d',
+  menuIcon: 'cube',
+  visibleInMenu: true,
+  capabilities: {
+    toolbar: true,
+    promptInput: false,
+  },
+  connectivity: {
+    sourceHandle: true,
+    targetHandle: true,
+    connectMenu: {
+      fromSource: true,
+      fromTarget: true,
+    },
+  },
+  createDefaultData: () => ({
+    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.director3d],
+    backgroundUrl: null,
+  }),
+};
+
+const vr360NodeDefinition: CanvasNodeDefinition<Vr360NodeData> = {
+  type: CANVAS_NODE_TYPES.vr360,
+  menuLabelKey: 'node.menu.vr360',
+  menuIcon: 'vr',
+  visibleInMenu: true,
+  capabilities: {
+    toolbar: true,
+    promptInput: false,
+  },
+  connectivity: {
+    sourceHandle: true,
+    targetHandle: true,
+    connectMenu: {
+      fromSource: true,
+      fromTarget: true,
+    },
+  },
+  createDefaultData: () => ({
+    displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.vr360],
+    backgroundUrl: null,
+  }),
+};
+
 export const canvasNodeDefinitions: Record<CanvasNodeType, CanvasNodeDefinition> = {
   [CANVAS_NODE_TYPES.upload]: uploadNodeDefinition,
   [CANVAS_NODE_TYPES.imageEdit]: imageEditNodeDefinition,
@@ -259,6 +307,8 @@ export const canvasNodeDefinitions: Record<CanvasNodeType, CanvasNodeDefinition>
   [CANVAS_NODE_TYPES.group]: groupNodeDefinition,
   [CANVAS_NODE_TYPES.storyboardSplit]: storyboardSplitDefinition,
   [CANVAS_NODE_TYPES.storyboardGen]: storyboardGenNodeDefinition,
+  [CANVAS_NODE_TYPES.director3d]: director3dNodeDefinition,
+  [CANVAS_NODE_TYPES.vr360]: vr360NodeDefinition,
 };
 
 export function getNodeDefinition(type: CanvasNodeType): CanvasNodeDefinition {

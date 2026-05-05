@@ -8,6 +8,8 @@ export const CANVAS_NODE_TYPES = {
   group: 'groupNode',
   storyboardSplit: 'storyboardNode',
   storyboardGen: 'storyboardGenNode',
+  director3d: 'director3dNode',
+  vr360: 'vr360Node',
 } as const;
 
 export type CanvasNodeType = (typeof CANVAS_NODE_TYPES)[keyof typeof CANVAS_NODE_TYPES];
@@ -140,6 +142,14 @@ export interface StoryboardGenNodeData {
   [key: string]: unknown;
 }
 
+export interface Director3dNodeData extends NodeDisplayData {
+  backgroundUrl: string | null;
+}
+
+export interface Vr360NodeData extends NodeDisplayData {
+  backgroundUrl: string | null;
+}
+
 export type CanvasNodeData =
   | UploadImageNodeData
   | ExportImageNodeData
@@ -147,7 +157,9 @@ export type CanvasNodeData =
   | GroupNodeData
   | ImageEditNodeData
   | StoryboardSplitNodeData
-  | StoryboardGenNodeData;
+  | StoryboardGenNodeData
+  | Director3dNodeData
+  | Vr360NodeData;
 
 export type CanvasNode = Node<CanvasNodeData, CanvasNodeType>;
 export type CanvasEdge = Edge;
@@ -218,6 +230,18 @@ export function isStoryboardGenNode(
   node: CanvasNode | null | undefined
 ): node is Node<StoryboardGenNodeData, typeof CANVAS_NODE_TYPES.storyboardGen> {
   return node?.type === CANVAS_NODE_TYPES.storyboardGen;
+}
+
+export function isDirector3dNode(
+  node: CanvasNode | null | undefined
+): node is Node<Director3dNodeData, typeof CANVAS_NODE_TYPES.director3d> {
+  return node?.type === CANVAS_NODE_TYPES.director3d;
+}
+
+export function isVr360Node(
+  node: CanvasNode | null | undefined
+): node is Node<Vr360NodeData, typeof CANVAS_NODE_TYPES.vr360> {
+  return node?.type === CANVAS_NODE_TYPES.vr360;
 }
 
 export function nodeHasImage(node: CanvasNode | null | undefined): boolean {

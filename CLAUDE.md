@@ -1,10 +1,14 @@
 # CLAUDE.md
 
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
 ## 1. 项目目标与技术栈
 
 - 产品目标：基于节点画布进行图片上传、AI 生成/编辑、工具处理（裁剪/标注/分镜）。
 - 前端：React + TypeScript + Zustand + @xyflow/react + TailwindCSS。
 - 后端：Tauri 2 + Rust（命令式接口）+ SQLite（rusqlite，WAL）。
+- 路径别名：`@/` → `src/`（vite.config.ts + tsconfig.json paths）。
+- Vite 开发服务器：端口 1420（Tauri 固定），HMR 端口 1421。
 - 关键原则：解耦、可扩展、可回归验证、自动持久化、交互性能优先。
 
 ## 2. 代码库浏览顺序
@@ -58,7 +62,7 @@
 
 2. 沿着数据流改动
 - UI 输入 -> Store -> 应用服务 -> 基础设施（命令/API）-> 持久化。
-- 禁止跨层“偷改”状态；尽量只在对应层处理对应职责。
+- 禁止跨层"偷改"状态；尽量只在对应层处理对应职责。
 
 3. 小步提交与即时验证
 - 每次改动后做轻量检查（见第 6 节），通过后再继续。
@@ -67,7 +71,7 @@
 - 在功能收尾或大改合并前运行完整构建。
 
 5. 发布快捷口令
-- 当用户明确说“推送更新”时，默认执行一次补丁版本发布：基于上一个 release/tag 自动递增 patch 版本号，汇总代码变动生成 Markdown 更新日志，完成版本同步、发布提交、annotated tag 与远端推送；如用户额外指定 minor/major 或自定义说明，则按用户要求覆盖默认行为。
+- 当用户明确说"推送更新"时，默认执行一次补丁版本发布：基于上一个 release/tag 自动递增 patch 版本号，汇总代码变动生成 Markdown 更新日志，完成版本同步、发布提交、annotated tag 与远端推送；如用户额外指定 minor/major 或自定义说明，则按用户要求覆盖默认行为。
 - 自动生成的更新日志正文只保留 `## 新增`、`## 优化`、`## 修复` 等二级标题分组与对应列表项；不要额外输出 `# vx.y.z` 标题、`基于某个 tag 之后的若干提交整理` 说明或 `## 完整提交` 区块，空分组可省略。
 
 ## 4. 架构与解耦标准
@@ -94,20 +98,20 @@
 - 使用 DTO/纯数据对象，避免双向引用。
 - Store 不应直接承担重业务逻辑；业务逻辑放应用层。
 
-### 4.6 文档边界
-
-- 本文档定位为“技术开发规范文档”，优先记录稳定的架构约束、分层规则、扩展流程、验证标准。
-- 不记录易变的具体 UI 操作步骤、临时交互文案或产品走查细节（这些应放在需求文档/设计稿/任务说明中）。
-- 当实现变化仅影响交互细节而不影响技术约束时，可不更新本文档。
-
 ### 4.5 节点注册单一真相源
 
 - 节点类型、默认数据、菜单展示、连线能力统一在 `domain/nodeRegistry.ts` 声明，不在 `Canvas.tsx` / `canvasStore.ts` 重复硬编码。
 - `connectivity` 为连线能力配置源：
   - `sourceHandle` / `targetHandle`：是否具备输入输出端口。
-  - `connectMenu.fromSource` / `connectMenu.fromTarget`：从输出端或输入端拉线时，是否允许出现在“创建节点菜单”。
+  - `connectMenu.fromSource` / `connectMenu.fromTarget`：从输出端或输入端拉线时，是否允许出现在"创建节点菜单"。
 - 菜单候选节点必须由注册表函数统一推导（如 `getConnectMenuNodeTypes`），禁止在 UI 层手写类型白名单。
 - 内部衍生节点（如切割结果 `storyboardSplit`、导出节点）默认 `connectMenu` 关闭，只能由应用流程自动创建。
+
+### 4.6 文档边界
+
+- 本文档定位为"技术开发规范文档"，优先记录稳定的架构约束、分层规则、扩展流程、验证标准。
+- 不记录易变的具体 UI 操作步骤、临时交互文案或产品走查细节（这些应放在需求文档/设计稿/任务说明中）。
+- 当实现变化仅影响交互细节而不影响技术约束时，可不更新本文档。
 
 ## 5. UI/交互规范
 
@@ -117,7 +121,7 @@
 - 节点底部控制条（模型/比例/生成/导出等）尺寸样式统一从 `src/features/canvas/ui/nodeControlStyles.ts` 引用，禁止在各节点散落硬编码一套新尺寸。
 - 节点工具条（NodeToolbar）位置、对齐、偏移统一从 `src/features/canvas/ui/nodeToolbarConfig.ts` 引用；禁止通过 `left/translate` 等绝对定位覆盖跟随逻辑。
 - 选中覆盖层 `SelectedNodeOverlay` 只承载轻量通用覆盖能力（如工具条），节点核心业务输入区应内聚到节点组件本体（例如 `ImageEditNode`）。
-- 对话框支持“打开/关闭”过渡，避免突兀闪烁。
+- 对话框支持"打开/关闭"过渡，避免突兀闪烁。
 - 明暗主题要可读，避免高饱和蓝色抢占焦点（导航图已优化为灰黑系）。
 - 快捷键应避开输入态（`input/textarea/contentEditable`）避免误触。
 
@@ -126,14 +130,17 @@
 ### 6.1 常用开发命令
 
 ```bash
-# 前端开发
+# 前端开发（Vite dev server, 端口 1420）
 npm run dev
 
-# Tauri 联调
+# Tauri 联调（启动 Rust 后端 + 前端 dev server）
 npm run tauri dev
 
+# 版本同步（将 package.json 版本同步到 Cargo.toml 和 tauri.conf.json）
+npm run sync:version
+
 # 自动发布（默认建议配合 docs/releases/vx.y.z.md 使用）
-npm run release -- patch --notes-file docs/releases/v0.1.12.md
+npm run release -- patch --notes-file docs/releases/v0.1.13.md
 ```
 
 ### 6.2 快速检查（优先执行）
@@ -149,17 +156,17 @@ cd src-tauri && cargo check
 ### 6.3 收尾检查
 
 ```bash
-# 前端完整构建
+# 前端完整构建（tsc + vite build）
 npm run build
 
 # 触发一次正式发布（会同步版本、提交、打 tag、推送）
-npm run release -- patch --notes-file docs/releases/v0.1.12.md
+npm run release -- patch --notes-file docs/releases/v0.1.13.md
 ```
 
 说明：
 - 日常迭代不要求每次都完整打包，先走 `tsc --noEmit` + 关键路径手测。
 - 影响打包、依赖、入口、持久化、Tauri 命令时，再执行完整构建。
-- 发布说明优先落到 `docs/releases/vx.y.z.md`，再通过 `npm run release` 或“推送更新”口令触发发布。
+- 发布说明优先落到 `docs/releases/vx.y.z.md`，再通过 `npm run release` 或"推送更新"口令触发发布。
 - `docs/releases/vx.y.z.md` 的默认格式同样只保留二级标题分组和列表正文，不写额外总标题、范围说明和完整提交清单。
 
 ## 7. 性能实践
@@ -169,9 +176,9 @@ npm run release -- patch --notes-file docs/releases/v0.1.12.md
 - 大图片场景避免重复 `dataURL` 转换；节点渲染优先使用 `previewImageUrl`，模型/工具处理使用原图 `imageUrl`。
 - 项目整量持久化（nodes/edges/history）使用防抖 + 空闲调度（idle callback）队列，避免与交互争用主线程。
 - viewport 持久化走独立轻量队列与独立命令（`update_project_viewport_record`），不要回退到整项目 upsert。
-- 视口更新要做归一化与阈值比较（epsilon），过滤微小抖动写入。
+- 视口更新要做归一化与阈值比较（epsilon=0.001），过滤微小抖动写入。
 - 优先使用 `useMemo/useCallback` 控制重渲染；避免把大对象直接塞进依赖导致抖动。
-- 画布交互优先“流畅”而非“实时全量持久化”，可使用短延迟合并保存。
+- 画布交互优先"流畅"而非"实时全量持久化"，可使用短延迟合并保存。
 
 ## 8. 模型与工具扩展规范
 
@@ -184,6 +191,7 @@ npm run release -- patch --notes-file docs/releases/v0.1.12.md
   - 支持分辨率/比例
   - 默认参数
   - 请求映射函数 `resolveRequest`
+- 模型自动被 `import.meta.glob` 发现并注册（`models/registry.ts`）。
 
 ### 8.2 新工具接入
 
@@ -191,7 +199,7 @@ npm run release -- patch --notes-file docs/releases/v0.1.12.md
 2. 在 `tools/builtInTools.ts` 注册插件。
 3. 在 `ui/tool-editors/` 新增对应编辑器。
 4. 在 `application/toolProcessor.ts` 接入执行逻辑。
-5. 保证产物仍走“处理后生成新节点”链路，不覆盖原节点。
+5. 保证产物仍走"处理后生成新节点"链路，不覆盖原节点。
 
 ### 8.3 新节点接入
 
@@ -214,8 +222,8 @@ npm run release -- patch --notes-file docs/releases/v0.1.12.md
 - 当前持久化后端为 SQLite，库文件位于 Tauri `app_data_dir/projects.db`。
 - `projects` 表核心字段：`nodes_json`、`edges_json`、`viewport_json`、`history_json`、`node_count`。
 - 前端持久化采用双通道：
-  - 整项目快照：`upsert_project_record`（防抖 + idle 调度）。
-  - 视口快照：`update_project_viewport_record`（轻量更新、独立防抖）。
+  - 整项目快照：`upsert_project_record`（防抖 260ms + idle 调度）。
+  - 视口快照：`update_project_viewport_record`（轻量更新、独立防抖 280ms）。
 - 图片字段通过 `imagePool + __img_ref__` 做去重编码；新增图片字段（如 `previewImageUrl`）需同步编码/解码映射。
 - 变更 SQLite 表结构时：
   - 必须在 `ensure_projects_table` 中做自愈（`PRAGMA table_info` + `ALTER TABLE`）。

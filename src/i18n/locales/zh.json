@@ -90,7 +90,9 @@
       "aiImageGeneration": "AI 图片",
       "storyboard": "分镜节点",
       "storyboardGen": "分镜生成",
-      "textAnnotation": "文本注释"
+      "textAnnotation": "文本注释",
+      "director3d": "3D 导演",
+      "vr360": "VR360 全景"
     },
     "imageNode": {
       "title": "图片节点",
@@ -140,6 +142,48 @@
     "textAnnotation": {
       "placeholder": "输入 Markdown 文本，取消选中后会渲染预览",
       "empty": "空注释"
+    },
+    "director3d": {
+      "uploadBackground": "上传背景图",
+      "backgroundLoaded": "背景已加载",
+      "cameraPresets": "机位",
+      "mannequin": "人物",
+      "poseStand": "站",
+      "poseSit": "坐",
+      "poseLean": "靠",
+      "poseLie": "躺",
+      "props": "道具",
+      "export": "导出",
+      "exportViewport": "视口",
+      "exportDepth": "深度",
+      "cameraFront": "正面",
+      "cameraRight": "右侧",
+      "cameraBack": "背面",
+      "cameraLeft": "左侧",
+      "cameraTop": "俯视",
+      "cameraBottom": "仰视",
+      "cameraThreeQuarter": "3/4 角",
+      "cameraCloseUp": "特写",
+      "cameraWide": "全景",
+      "cameraDutch": "荷兰角",
+      "propCategoryIndoor": "室内家具",
+      "propCategoryOutdoor": "室外道具",
+      "propCategoryAncient": "古风道具",
+      "propCategoryArchitecture": "建筑大件",
+      "propCategoryDecoration": "装饰",
+      "propCategoryGeometry": "几何模型"
+    },
+    "vr360": {
+      "uploadPanorama": "上传全景图",
+      "panoramaLoaded": "全景图已加载",
+      "exitImmersive": "退出沉浸",
+      "parallaxOn": "视差开",
+      "parallaxOff": "视差关",
+      "immersiveMode": "沉浸模式",
+      "export": "导出",
+      "exportSingle": "单图",
+      "export4Grid": "4格",
+      "export12Grid": "12格"
     }
   },
   "viewer": {

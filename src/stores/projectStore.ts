@@ -616,9 +616,11 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
       return;
     }
 
+    console.log('[projectStore] hydrate started');
     try {
       const records = await listProjectSummaries();
       const projects = records.map(toProjectSummary).sort((a, b) => b.updatedAt - a.updatedAt);
+      console.log('[projectStore] hydrate success, loaded', projects.length, 'projects');
       set({
         projects,
         currentProjectId: null,
@@ -626,7 +628,7 @@ export const useProjectStore = create<ProjectState>((set, get) => ({
         isHydrated: true,
       });
     } catch (error) {
-      console.error('Failed to hydrate project summaries from SQLite', error);
+      console.error('[projectStore] Failed to hydrate project summaries from SQLite', error);
       set({
         projects: [],
         currentProjectId: null,

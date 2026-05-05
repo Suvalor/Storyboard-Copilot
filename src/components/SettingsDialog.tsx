@@ -36,6 +36,7 @@ const PROVIDER_REGISTER_URLS: Record<string, string> = {
   grsai: 'https://grsai.com',
   kie: 'https://kie.ai?ref=eef20ef0b0595cad227d45b29c635f6c',
   fal: 'https://fal.ai',
+  maas: 'https://www.xfyun.cn',
 };
 
 const PROVIDER_GET_KEY_URLS: Record<string, string> = {
@@ -43,6 +44,7 @@ const PROVIDER_GET_KEY_URLS: Record<string, string> = {
   grsai: 'https://grsai.com/zh/dashboard/api-keys',
   kie: 'https://kie.ai/api-key',
   fal: 'https://fal.ai/dashboard/keys',
+  maas: 'https://www.xfyun.cn/my/apikey',
 };
 
 function SettingsCheckboxCard({

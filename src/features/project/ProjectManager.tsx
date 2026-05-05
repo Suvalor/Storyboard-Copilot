@@ -19,7 +19,14 @@ export function ProjectManager() {
   const [editingProjectName, setEditingProjectName] = useState('');
   const [sortField, setSortField] = useState<ProjectSortField>('createdAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
-  const providerIds = useMemo(() => listModelProviders().map((provider) => provider.id), []);
+  const providerIds = useMemo(() => {
+    try {
+      return listModelProviders().map((provider) => provider.id);
+    } catch (error) {
+      console.error('[ProjectManager] Failed to list model providers:', error);
+      return [];
+    }
+  }, []);
   const configuredApiKeyCount = useSettingsStore((state) =>
     getConfiguredApiKeyCount(state.apiKeys, providerIds)
   );
