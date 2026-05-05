@@ -171,7 +171,22 @@
       "propCategoryAncient": "Ancient Props",
       "propCategoryArchitecture": "Architecture",
       "propCategoryDecoration": "Decoration",
-      "propCategoryGeometry": "Geometry"
+      "propCategoryGeometry": "Geometry",
+      "drawer": {
+        "title": "3D Director",
+        "tabCamera": "Camera",
+        "tabFigures": "Figures",
+        "tabProps": "Props",
+        "tabExport": "Export",
+        "addPose": "Add Pose",
+        "mannequinList": "Added Figures",
+        "propList": "Added Props",
+        "emptyMannequins": "No mannequins yet. Add one above.",
+        "emptyProps": "No props yet. Pick a category first.",
+        "exportError": "Export failed: {{reason}}",
+        "exporting": "Exporting…",
+        "propCategoryLabel": "Prop Category"
+      }
     },
     "vr360": {
       "uploadPanorama": "Upload Panorama",

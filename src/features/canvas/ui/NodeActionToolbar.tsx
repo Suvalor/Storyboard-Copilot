@@ -6,12 +6,14 @@ import { useTranslation } from 'react-i18next';
 
 import {
   NODE_TOOL_TYPES,
+  isDirector3dNode,
   isExportImageNode,
   isGroupNode,
   isImageEditNode,
   isStoryboardGenNode,
   isStoryboardSplitNode,
   isUploadNode,
+  isVr360Node,
   type CanvasNode,
   type NodeToolType,
 } from '@/features/canvas/domain/canvasNodes';
@@ -77,6 +79,9 @@ export const NodeActionToolbar = memo(({ node }: NodeActionToolbarProps) => {
   const imageSource = useMemo(() => {
     if (isUploadNode(node) || isImageEditNode(node) || isExportImageNode(node)) {
       return node.data.imageUrl || node.data.previewImageUrl || null;
+    }
+    if (isDirector3dNode(node) || isVr360Node(node)) {
+      return node.data.backgroundUrl || null;
     }
     return null;
   }, [node]);

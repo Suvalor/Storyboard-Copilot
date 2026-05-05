@@ -1,8 +1,10 @@
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useMemo } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import { useTranslation } from 'react-i18next';
+
+import { resolveImageDisplayUrl } from '@/features/canvas/application/imageData';
 
 // --- Panorama sphere ---
 
@@ -81,6 +83,10 @@ export function Vr360Scene({ backgroundUrl, onExportImage }: Vr360SceneProps) {
   const [parallaxEnabled, setParallaxEnabled] = useState(true);
   const [immersiveMode, setImmersiveMode] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const resolvedBackgroundUrl = useMemo(
+    () => backgroundUrl ? resolveImageDisplayUrl(backgroundUrl) : null,
+    [backgroundUrl],
+  );
 
   const handleExportSingle = useCallback(() => {
     const canvas = canvasRef.current;
@@ -104,7 +110,7 @@ export function Vr360Scene({ backgroundUrl, onExportImage }: Vr360SceneProps) {
           gl={{ preserveDrawingBuffer: true }}
         >
           <ambientLight intensity={0.5} />
-          {backgroundUrl && <PanoramaSphere url={backgroundUrl} />}
+          {resolvedBackgroundUrl && <PanoramaSphere url={resolvedBackgroundUrl} />}
           <HoverParallaxController enabled={parallaxEnabled} />
           <ImmersiveCamera active={immersiveMode} />
           <OrbitControls

@@ -90,6 +90,10 @@ export interface CanvasEventMap {
     nodeId: string;
     file: File;
   };
+  'director3d/export-viewport': { nodeId: string };
+  'director3d/export-depth': { nodeId: string };
+  'director3d/export-result': { nodeId: string; kind: 'viewport' | 'depth'; dataUrl: string };
+  'director3d/export-error': { nodeId: string; kind: 'viewport' | 'depth'; reason: string };
 }
 
 export interface CanvasEventBus {

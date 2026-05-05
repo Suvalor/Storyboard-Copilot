@@ -171,7 +171,22 @@
       "propCategoryAncient": "古风道具",
       "propCategoryArchitecture": "建筑大件",
       "propCategoryDecoration": "装饰",
-      "propCategoryGeometry": "几何模型"
+      "propCategoryGeometry": "几何模型",
+      "drawer": {
+        "title": "3D 导演",
+        "tabCamera": "机位",
+        "tabFigures": "人物",
+        "tabProps": "道具",
+        "tabExport": "导出",
+        "addPose": "添加姿态",
+        "mannequinList": "已添加人物",
+        "propList": "已添加道具",
+        "emptyMannequins": "暂无人物，点击上方按钮添加",
+        "emptyProps": "暂无道具，先选择分类并添加",
+        "exportError": "导出失败：{{reason}}",
+        "exporting": "导出中…",
+        "propCategoryLabel": "道具分类"
+      }
     },
     "vr360": {
       "uploadPanorama": "上传全景图",

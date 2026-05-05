@@ -1,51 +1,63 @@
-import { useRef, useCallback, useState } from 'react';
+import { useRef, useMemo, useEffect } from 'react';
 import { Canvas, useThree, useFrame } from '@react-three/fiber';
-import { OrbitControls } from '@react-three/drei';
+import { OrbitControls, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
-import { useTranslation } from 'react-i18next';
 
-import { CAMERA_PRESETS, type CameraPreset } from './cameraPresets';
-import { createMannequinGeometry, type MannequinPose, type MannequinInstance, ALL_POSES } from './mannequin';
-import { getPropsByCategory, type PropDefinition, type PropCategory, PROP_CATEGORIES } from './props';
+import { resolveImageDisplayUrl } from '@/features/canvas/application/imageData';
+import { type CameraPreset } from './cameraPresets';
+import { createMannequinGeometry, type MannequinInstance } from './mannequin';
 import { SceneEnvironment } from './sceneEnvironment';
+import { canvasEventBus } from '@/features/canvas/application/canvasServices';
+import { type PlacedPropInstance } from '@/stores/canvasStore';
+import { getPropById } from './props';
+
+const DEFAULT_FOV = 50;
 
 // --- Internal 3D objects ---
 
 interface MannequinObjectProps {
   instance: MannequinInstance;
-  onRemove: (id: string) => void;
 }
 
-function MannequinObject({ instance, onRemove }: MannequinObjectProps) {
-  const groupRef = useRef<THREE.Group>(null);
+function MannequinObject({ instance }: MannequinObjectProps) {
+  const geometry = useMemo(
+    () => createMannequinGeometry(instance.pose, instance.color),
+    [instance.pose, instance.color],
+  );
 
-  useFrame(() => {
-    if (groupRef.current) {
-      groupRef.current.position.set(...instance.position);
-      groupRef.current.rotation.y = instance.rotation;
-    }
-  });
-
-  const geometry = createMannequinGeometry(instance.pose);
+  // C-01: Dispose GPU resources when geometry changes (pose/color recompute)
+  useEffect(() => {
+    const currentGeometry = geometry;
+    return () => {
+      currentGeometry.traverse((child) => {
+        if ((child as THREE.Mesh).isMesh) {
+          (child as THREE.Mesh).geometry.dispose();
+          ((child as THREE.Mesh).material as THREE.Material).dispose();
+        }
+      });
+    };
+  }, [geometry]);
 
   return (
     <primitive
-      ref={groupRef}
       object={geometry}
       position={instance.position}
       rotation={[0, instance.rotation, 0]}
-      onClick={() => onRemove(instance.id)}
     />
   );
 }
 
 interface PropObjectProps {
-  definition: PropDefinition;
+  definitionId: string;
   position: [number, number, number];
-  rotation?: number;
+  rotation: number;
 }
 
-function PropObject({ definition, position, rotation = 0 }: PropObjectProps) {
+function PropObject({ definitionId, position, rotation }: PropObjectProps) {
+  const definition = getPropById(definitionId);
+  if (!definition) {
+    return null;
+  }
   const mesh = definition.createMesh();
   return (
     <primitive
@@ -57,12 +69,9 @@ function PropObject({ definition, position, rotation = 0 }: PropObjectProps) {
 }
 
 function PanoramaSphere({ url }: { url: string }) {
-  const texture = useRef<THREE.Texture | null>(null);
-
-  const loader = new THREE.TextureLoader();
-  const tex = loader.load(url);
+  // M-02: useTexture manages loading + disposal automatically
+  const tex = useTexture(url);
   tex.colorSpace = THREE.SRGBColorSpace;
-  texture.current = tex;
 
   return (
     <mesh>
@@ -74,20 +83,87 @@ function PanoramaSphere({ url }: { url: string }) {
 
 // --- Camera preset transition ---
 
-function CameraController({ preset }: { preset: CameraPreset | null }) {
+/** Threshold to decide the transition has reached its target */
+const TRANSITION_SNAP_THRESHOLD = 0.02;
+const LERP_FACTOR = 0.06;
+
+function CameraController({
+  preset,
+  orbitControlsRef,
+}: {
+  preset: CameraPreset | null;
+  orbitControlsRef: React.RefObject<React.ComponentRef<typeof OrbitControls> | null>;
+}) {
   const { camera } = useThree();
-  const targetPos = useRef(new THREE.Vector3(0, 1.6, 5));
-  const targetLookAt = useRef(new THREE.Vector3(0, 1, 0));
+
+  // Track whether we are actively transitioning to a new preset
+  const isTransitioning = useRef(false);
+  // Store the last preset id to detect changes
+  const lastPresetId = useRef<string | null>(null);
+  // Target state for the transition
+  const targetPos = useRef(new THREE.Vector3());
+  const targetLookAt = useRef(new THREE.Vector3());
+  const targetFov = useRef(DEFAULT_FOV);
 
   useFrame(() => {
-    if (preset) {
-      targetPos.current.set(...preset.position);
-      targetLookAt.current.set(...preset.target);
+    // Detect preset change: start transitioning
+    const currentPresetId = preset?.id ?? null;
+    if (currentPresetId !== lastPresetId.current) {
+      lastPresetId.current = currentPresetId;
+      if (preset) {
+        isTransitioning.current = true;
+        targetPos.current.set(...preset.position);
+        targetLookAt.current.set(...preset.target);
+        targetFov.current = preset.fov ?? DEFAULT_FOV;
+        // Disable OrbitControls during transition so camera isn't fought over
+        if (orbitControlsRef.current) {
+          orbitControlsRef.current.enabled = false;
+        }
+      } else {
+        // C-03: When preset becomes null, stop transitioning and re-enable controls
+        isTransitioning.current = false;
+        if (orbitControlsRef.current) {
+          orbitControlsRef.current.enabled = true;
+        }
+      }
     }
-    camera.position.lerp(targetPos.current, 0.05);
-    if (camera instanceof THREE.PerspectiveCamera && preset?.fov) {
-      camera.fov += (preset.fov - camera.fov) * 0.05;
+
+    if (!isTransitioning.current) {
+      return;
+    }
+
+    // Lerp camera toward target
+    camera.position.lerp(targetPos.current, LERP_FACTOR);
+    // M-03: Also interpolate OrbitControls target (lookAt direction)
+    if (orbitControlsRef.current) {
+      orbitControlsRef.current.target.lerp(targetLookAt.current, LERP_FACTOR);
+    }
+    if (camera instanceof THREE.PerspectiveCamera) {
+      camera.fov += (targetFov.current - camera.fov) * LERP_FACTOR;
       camera.updateProjectionMatrix();
+    }
+
+    // Check if close enough to snap and end transition
+    const distance = camera.position.distanceTo(targetPos.current);
+    const fovDelta = camera instanceof THREE.PerspectiveCamera
+      ? Math.abs(camera.fov - targetFov.current)
+      : 0;
+    if (distance < TRANSITION_SNAP_THRESHOLD && fovDelta < 0.5) {
+      camera.position.copy(targetPos.current);
+      // M-03: Snap lookAt target as well
+      if (orbitControlsRef.current) {
+        orbitControlsRef.current.target.copy(targetLookAt.current);
+        orbitControlsRef.current.update();
+      }
+      if (camera instanceof THREE.PerspectiveCamera) {
+        camera.fov = targetFov.current;
+        camera.updateProjectionMatrix();
+      }
+      isTransitioning.current = false;
+      // Re-enable OrbitControls so user can freely orbit
+      if (orbitControlsRef.current) {
+        orbitControlsRef.current.enabled = true;
+      }
     }
   });
 
@@ -97,159 +173,108 @@ function CameraController({ preset }: { preset: CameraPreset | null }) {
 // --- Main scene component ---
 
 export interface Director3dSceneProps {
+  nodeId: string;
   backgroundUrl: string | null;
   mannequins: MannequinInstance[];
-  placedProps: { definition: PropDefinition; position: [number, number, number]; rotation: number }[];
-  onAddMannequin: (pose: MannequinPose) => void;
-  onRemoveMannequin: (id: string) => void;
-  onAddProp: (definition: PropDefinition) => void;
-  onExportViewport: (dataUrl: string) => void;
-  onExportDepth: (dataUrl: string) => void;
+  placedProps: PlacedPropInstance[];
+  activePreset: CameraPreset | null;
 }
 
 export function Director3dScene({
+  nodeId,
   backgroundUrl,
   mannequins,
   placedProps,
-  onAddMannequin,
-  onRemoveMannequin,
-  onAddProp,
-  onExportViewport,
-  onExportDepth,
+  activePreset,
 }: Director3dSceneProps) {
-  const { t } = useTranslation();
-  const [activePreset, setActivePreset] = useState<CameraPreset | null>(CAMERA_PRESETS[0]);
-  const [selectedCategory, setSelectedCategory] = useState<PropCategory>('indoor-furniture');
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const orbitControlsRef = useRef<React.ComponentRef<typeof OrbitControls> | null>(null);
+  const resolvedBackgroundUrl = useMemo(
+    () => backgroundUrl ? resolveImageDisplayUrl(backgroundUrl) : null,
+    [backgroundUrl],
+  );
 
-  const handleExportViewport = useCallback(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    onExportViewport(canvas.toDataURL('image/png'));
-  }, [onExportViewport]);
+  // --- Event bus subscription for export ---
+  useEffect(() => {
+    const handleExportViewport = (payload: { nodeId: string }) => {
+      if (payload.nodeId !== nodeId) {
+        return;
+      }
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        canvasEventBus.publish('director3d/export-error', { nodeId, kind: 'viewport', reason: 'Canvas not available' });
+        return;
+      }
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        canvasEventBus.publish('director3d/export-result', { nodeId, kind: 'viewport', dataUrl });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown export error';
+        canvasEventBus.publish('director3d/export-error', { nodeId, kind: 'viewport', reason: message });
+      }
+    };
 
-  const handleExportDepth = useCallback(() => {
-    // Depth export will be triggered from the 3D context
-    onExportDepth('');
-  }, [onExportDepth]);
+    const handleExportDepth = (payload: { nodeId: string }) => {
+      if (payload.nodeId !== nodeId) {
+        return;
+      }
+      const canvas = canvasRef.current;
+      if (!canvas) {
+        canvasEventBus.publish('director3d/export-error', { nodeId, kind: 'depth', reason: 'Canvas not available' });
+        return;
+      }
+      try {
+        const dataUrl = canvas.toDataURL('image/png');
+        canvasEventBus.publish('director3d/export-result', { nodeId, kind: 'depth', dataUrl });
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'Unknown export error';
+        canvasEventBus.publish('director3d/export-error', { nodeId, kind: 'depth', reason: message });
+      }
+    };
+
+    const unsubViewport = canvasEventBus.subscribe('director3d/export-viewport', handleExportViewport);
+    const unsubDepth = canvasEventBus.subscribe('director3d/export-depth', handleExportDepth);
+
+    return () => {
+      unsubViewport();
+      unsubDepth();
+    };
+  }, [nodeId]);
 
   return (
-    <div className="flex h-full w-full flex-col">
-      {/* 3D Canvas */}
-      <div className="relative flex-1">
-        <Canvas
-          ref={canvasRef}
-          camera={{ position: [0, 1.6, 5], fov: 50, near: 0.1, far: 100 }}
-          shadows
-          gl={{ preserveDrawingBuffer: true }}
-        >
-          <SceneEnvironment />
-          <CameraController preset={activePreset} />
-          <OrbitControls
-            enableDamping
-            dampingFactor={0.08}
-            minDistance={1}
-            maxDistance={30}
-            target={[0, 1, 0]}
+    <div className="h-full w-full">
+      <Canvas
+        ref={canvasRef}
+        camera={{ position: [0, 1.6, 5], fov: DEFAULT_FOV, near: 0.1, far: 100 }}
+        shadows
+        gl={{ preserveDrawingBuffer: true }}
+      >
+        <SceneEnvironment />
+        <CameraController preset={activePreset} orbitControlsRef={orbitControlsRef} />
+        <OrbitControls
+          ref={orbitControlsRef}
+          enableDamping
+          dampingFactor={0.08}
+          minDistance={1}
+          maxDistance={30}
+          target={[0, 1, 0]}
+        />
+
+        {resolvedBackgroundUrl && <PanoramaSphere url={resolvedBackgroundUrl} />}
+
+        {mannequins.map((m) => (
+          <MannequinObject key={m.id} instance={m} />
+        ))}
+
+        {placedProps.map((p) => (
+          <PropObject
+            key={p.id}
+            definitionId={p.definitionId}
+            position={p.position}
+            rotation={p.rotation}
           />
-
-          {backgroundUrl && <PanoramaSphere url={backgroundUrl} />}
-
-          {mannequins.map((m) => (
-            <MannequinObject key={m.id} instance={m} onRemove={onRemoveMannequin} />
-          ))}
-
-          {placedProps.map((p, i) => (
-            <PropObject
-              key={`${p.definition.id}-${i}`}
-              definition={p.definition}
-              position={p.position}
-              rotation={p.rotation}
-            />
-          ))}
-        </Canvas>
-      </div>
-
-      {/* Control panels */}
-      <div className="flex gap-1 border-t border-white/10 bg-surface-dark/90 p-2 text-xs">
-        {/* Camera presets */}
-        <div className="flex flex-col gap-1">
-          <span className="text-text-muted">{t('node.director3d.cameraPresets')}</span>
-          <div className="flex flex-wrap gap-1">
-            {CAMERA_PRESETS.map((preset) => (
-              <button
-                key={preset.id}
-                className={`rounded px-1.5 py-0.5 ${activePreset?.id === preset.id ? 'bg-accent text-white' : 'bg-white/10 text-text-muted hover:bg-white/20'}`}
-                onClick={() => setActivePreset(preset)}
-              >
-                {t(preset.labelKey)}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Mannequin controls */}
-        <div className="flex flex-col gap-1 border-l border-white/10 pl-2">
-          <span className="text-text-muted">{t('node.director3d.mannequin')}</span>
-          <div className="flex gap-1">
-            {ALL_POSES.map((pose) => (
-              <button
-                key={pose}
-                className="rounded bg-white/10 px-1.5 py-0.5 text-text-muted hover:bg-accent hover:text-white"
-                onClick={() => onAddMannequin(pose)}
-              >
-                {pose === 'stand' ? t('node.director3d.poseStand') : pose === 'sit-chair' ? t('node.director3d.poseSit') : pose === 'lean-45' ? t('node.director3d.poseLean') : t('node.director3d.poseLie')}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Props */}
-        <div className="flex flex-col gap-1 border-l border-white/10 pl-2">
-          <span className="text-text-muted">{t('node.director3d.props')}</span>
-          <div className="flex gap-1">
-            {PROP_CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                className={`rounded px-1.5 py-0.5 ${selectedCategory === cat.id ? 'bg-accent text-white' : 'bg-white/10 text-text-muted hover:bg-white/20'}`}
-                onClick={() => setSelectedCategory(cat.id)}
-              >
-                {t(cat.labelKey)}
-              </button>
-            ))}
-          </div>
-          <div className="flex flex-wrap gap-1">
-            {getPropsByCategory(selectedCategory).map((prop) => (
-              <button
-                key={prop.id}
-                className="rounded bg-white/10 px-1.5 py-0.5 text-text-muted hover:bg-accent hover:text-white"
-                onClick={() => onAddProp(prop)}
-              >
-                {prop.label}
-              </button>
-            ))}
-          </div>
-        </div>
-
-        {/* Export */}
-        <div className="flex flex-col gap-1 border-l border-white/10 pl-2">
-          <span className="text-text-muted">{t('node.director3d.export')}</span>
-          <div className="flex gap-1">
-            <button
-              className="rounded bg-white/10 px-1.5 py-0.5 text-text-muted hover:bg-accent hover:text-white"
-              onClick={handleExportViewport}
-            >
-              {t('node.director3d.exportViewport')}
-            </button>
-            <button
-              className="rounded bg-white/10 px-1.5 py-0.5 text-text-muted hover:bg-accent hover:text-white"
-              onClick={handleExportDepth}
-            >
-              {t('node.director3d.exportDepth')}
-            </button>
-          </div>
-        </div>
-      </div>
+        ))}
+      </Canvas>
     </div>
   );
 }

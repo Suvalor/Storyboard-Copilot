@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef, useState } from 'react';
+import { memo, useCallback, useRef } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Box } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -8,8 +8,7 @@ import { resolveNodeDisplayName } from '@/features/canvas/domain/nodeDisplay';
 import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canvas/ui/NodeHeader';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { Director3dScene } from '@/features/canvas/3d/Director3dScene';
-import { type MannequinInstance, type MannequinPose } from '@/features/canvas/3d/mannequin';
-import { type PropDefinition } from '@/features/canvas/3d/props';
+import { prepareNodeImageFromFile } from '@/features/canvas/application/imageData';
 
 type Director3dNodeProps = NodeProps & {
   id: string;
@@ -20,8 +19,6 @@ type Director3dNodeProps = NodeProps & {
 const DEFAULT_WIDTH = 480;
 const MIN_HEIGHT = 320;
 
-let mannequinCounter = 0;
-
 export const Director3dNode = memo(({ id, data, selected }: Director3dNodeProps) => {
   const { t } = useTranslation();
   const setSelectedNode = useCanvasStore((state) => state.setSelectedNode);
@@ -29,55 +26,27 @@ export const Director3dNode = memo(({ id, data, selected }: Director3dNodeProps)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resolvedTitle = resolveNodeDisplayName(CANVAS_NODE_TYPES.director3d, data);
 
-  const [mannequins, setMannequins] = useState<MannequinInstance[]>([]);
-  const [placedProps, setPlacedProps] = useState<{ definition: PropDefinition; position: [number, number, number]; rotation: number }[]>([]);
-  const [showScene, setShowScene] = useState(false);
+  // Read director3d state from store
+  const mannequins = useCanvasStore((state) => state.director3dState.mannequins);
+  const placedProps = useCanvasStore((state) => state.director3dState.placedProps);
+  const activePreset = useCanvasStore((state) => state.director3dState.activePreset);
+
+  const showScene = Boolean(data.backgroundUrl);
 
   const handleFileSelect = useCallback(
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
-      const url = URL.createObjectURL(file);
-      updateNodeData(id, { backgroundUrl: url });
-      setShowScene(true);
+      void prepareNodeImageFromFile(file)
+        .then((prepared) => {
+          updateNodeData(id, { backgroundUrl: prepared.imageUrl });
+        })
+        .catch((error) => {
+          console.error('[Director3dNode] Failed to prepare background image', error);
+        });
     },
     [id, updateNodeData],
   );
-
-  const handleAddMannequin = useCallback((pose: MannequinPose) => {
-    const newMannequin: MannequinInstance = {
-      id: `mannequin-${++mannequinCounter}`,
-      position: [(Math.random() - 0.5) * 3, 0, (Math.random() - 0.5) * 3],
-      rotation: Math.random() * Math.PI * 2,
-      pose,
-      color: '#b0b8c8',
-    };
-    setMannequins((prev) => [...prev, newMannequin]);
-  }, []);
-
-  const handleRemoveMannequin = useCallback((mannequinId: string) => {
-    setMannequins((prev) => prev.filter((m) => m.id !== mannequinId));
-  }, []);
-
-  const handleAddProp = useCallback((definition: PropDefinition) => {
-    setPlacedProps((prev) => [
-      ...prev,
-      {
-        definition,
-        position: [(Math.random() - 0.5) * 4, 0, (Math.random() - 0.5) * 4],
-        rotation: Math.random() * Math.PI * 2,
-      },
-    ]);
-  }, []);
-
-  const handleExportViewport = useCallback((_dataUrl: string) => {
-    // In a full implementation, this would create a new upload node with the exported image
-    console.log('Export viewport from director3d node', id);
-  }, [id]);
-
-  const handleExportDepth = useCallback((_dataUrl: string) => {
-    console.log('Export depth from director3d node', id);
-  }, [id]);
 
   return (
     <div
@@ -99,16 +68,13 @@ export const Director3dNode = memo(({ id, data, selected }: Director3dNodeProps)
       />
 
       <div className="pt-8 pb-1" style={{ height: MIN_HEIGHT - 40 }}>
-        {data.backgroundUrl || showScene ? (
+        {showScene ? (
           <Director3dScene
+            nodeId={id}
             backgroundUrl={data.backgroundUrl}
             mannequins={mannequins}
             placedProps={placedProps}
-            onAddMannequin={handleAddMannequin}
-            onRemoveMannequin={handleRemoveMannequin}
-            onAddProp={handleAddProp}
-            onExportViewport={handleExportViewport}
-            onExportDepth={handleExportDepth}
+            activePreset={activePreset}
           />
         ) : (
           <div className="flex h-full flex-col items-center justify-center gap-3">

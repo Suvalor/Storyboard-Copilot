@@ -23,6 +23,7 @@ export type MenuIconKey = 'upload' | 'sparkles' | 'layout' | 'text' | 'cube' | '
 export interface CanvasNodeCapabilities {
   toolbar: boolean;
   promptInput: boolean;
+  drawerPanel?: boolean;
 }
 
 export interface CanvasNodeConnectivity {
@@ -261,6 +262,7 @@ const director3dNodeDefinition: CanvasNodeDefinition<Director3dNodeData> = {
   capabilities: {
     toolbar: true,
     promptInput: false,
+    drawerPanel: true,
   },
   connectivity: {
     sourceHandle: true,

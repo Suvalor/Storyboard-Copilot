@@ -46,12 +46,16 @@ import {
   nodeHasSourceHandle,
   nodeHasTargetHandle,
 } from '@/features/canvas/domain/nodeRegistry';
+import { hasDrawerPanel } from '@/features/canvas/domain/drawerPanelRegistry';
 import { embedStoryboardImageMetadata } from '@/commands/image';
 import { listModelProviders } from '@/features/canvas/models';
 import { nodeTypes } from './nodes';
 import { edgeTypes } from './edges';
 import { NodeSelectionMenu } from './NodeSelectionMenu';
 import { SelectedNodeOverlay } from './ui/SelectedNodeOverlay';
+import { NodePropertyDrawer } from './ui/NodePropertyDrawer';
+// Ensure the director3d drawer panel is registered (side-effect import).
+import './ui/drawerPanels/Director3dDrawerPanel';
 import { NodeToolDialog } from './ui/NodeToolDialog';
 import { ImageViewerModal } from './ui/ImageViewerModal';
 import { MissingApiKeyHint } from '@/features/settings/MissingApiKeyHint';
@@ -184,16 +188,12 @@ function resolveAllowedNodeTypes(handleType: HandleType): CanvasNodeType[] {
   return getConnectMenuNodeTypes(handleType);
 }
 
-function canNodeTypeBeManualConnectionSource(type: CanvasNodeType): boolean {
-  return type === CANVAS_NODE_TYPES.upload || type === CANVAS_NODE_TYPES.exportImage;
-}
-
 function canNodeBeManualConnectionSource(nodeId: string | null | undefined, nodes: CanvasNode[]): boolean {
   if (!nodeId) {
     return false;
   }
   const node = nodes.find((item) => item.id === nodeId);
-  return node ? canNodeTypeBeManualConnectionSource(node.type) : false;
+  return node ? nodeHasSourceHandle(node.type) : false;
 }
 
 function getClientPosition(event: MouseEvent | TouchEvent): { x: number; y: number } | null {
@@ -298,6 +298,8 @@ export function Canvas() {
   const imageViewer = useCanvasStore((state) => state.imageViewer);
   const closeImageViewer = useCanvasStore((state) => state.closeImageViewer);
   const navigateImageViewer = useCanvasStore((state) => state.navigateImageViewer);
+  const setDrawerOpen = useCanvasStore((state) => state.setDrawerOpen);
+  const setDrawerClosed = useCanvasStore((state) => state.setDrawerClosed);
   const apiKeys = useSettingsStore((state) => state.apiKeys);
   const providerIds = useMemo(() => listModelProviders().map((provider) => provider.id), []);
   const configuredApiKeyCount = useSettingsStore((state) =>
@@ -823,6 +825,36 @@ export function Canvas() {
       setSelectedNode(null);
     }
   }, [selectedNodeId, selectedNodeIds, setSelectedNode]);
+
+  // Drawer open/close driven by node selection with 150ms debounce.
+  useEffect(() => {
+    const DEBOUNCE_MS = 150;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+
+    if (selectedNodeIds.length === 1) {
+      const selectedNode = nodes.find((node) => node.id === selectedNodeIds[0]);
+      if (selectedNode && hasDrawerPanel(selectedNode.type)) {
+        timer = setTimeout(() => {
+          setDrawerOpen(selectedNode.id, selectedNode.type);
+        }, DEBOUNCE_MS);
+      } else {
+        timer = setTimeout(() => {
+          setDrawerClosed();
+        }, DEBOUNCE_MS);
+      }
+    } else {
+      // Multi-select or no selection: close drawer.
+      timer = setTimeout(() => {
+        setDrawerClosed();
+      }, DEBOUNCE_MS);
+    }
+
+    return () => {
+      if (timer) {
+        clearTimeout(timer);
+      }
+    };
+  }, [nodes, selectedNodeIds, setDrawerOpen, setDrawerClosed]);
 
   useEffect(() => {
     const handlePaste = (event: ClipboardEvent) => {
@@ -1482,7 +1514,6 @@ export function Canvas() {
         if (
           sourceNode &&
           targetNode &&
-          canNodeTypeBeManualConnectionSource(sourceNode.type) &&
           nodeHasSourceHandle(sourceNode.type) &&
           nodeHasTargetHandle(targetNode.type)
         ) {
@@ -1675,6 +1706,8 @@ export function Canvas() {
       )}
 
       <NodeToolDialog />
+
+      <NodePropertyDrawer />
 
       <ImageViewerModal
         open={imageViewer.isOpen}

@@ -28,6 +28,11 @@ import {
   type StoryboardFrameItem,
   isStoryboardSplitNode,
 } from '@/features/canvas/domain/canvasNodes';
+import type { MannequinInstance, MannequinPose } from '@/features/canvas/3d/mannequin';
+import { MANNEQUIN_PALETTE } from '@/features/canvas/3d/mannequin';
+import type { PropCategory } from '@/features/canvas/3d/props';
+import type { CameraPreset } from '@/features/canvas/3d/cameraPresets';
+import { CAMERA_PRESETS } from '@/features/canvas/3d/cameraPresets';
 import {
   nodeHasSourceHandle,
   nodeHasTargetHandle,
@@ -56,6 +61,29 @@ export interface CanvasHistorySnapshot {
   edges: CanvasEdge[];
 }
 
+/** A placed prop inside the 3D director scene. */
+export interface PlacedPropInstance {
+  id: string;
+  definitionId: string;
+  position: [number, number, number];
+  rotation: number;
+}
+
+/** 3D director node state (not persisted in MVP). */
+export interface Director3dState {
+  mannequins: MannequinInstance[];
+  placedProps: PlacedPropInstance[];
+  activePreset: CameraPreset | null;
+  selectedPropCategory: PropCategory;
+}
+
+/** Drawer open/close state bound to a specific node. */
+export interface DrawerState {
+  isOpen: boolean;
+  nodeId: string | null;
+  nodeType: CanvasNodeType | null;
+}
+
 export interface CanvasHistoryState {
   past: CanvasHistorySnapshot[];
   future: CanvasHistorySnapshot[];
@@ -79,6 +107,8 @@ interface CanvasState {
     imageList: string[];
     currentIndex: number;
   };
+  director3dState: Director3dState;
+  drawerState: DrawerState;
 
   onNodesChange: (changes: NodeChange<CanvasNode>[]) => void;
   onEdgesChange: (changes: EdgeChange<CanvasEdge>[]) => void;
@@ -151,6 +181,19 @@ interface CanvasState {
   redo: () => boolean;
 
   clearCanvas: () => void;
+
+  // Drawer
+  setDrawerOpen: (nodeId: string, nodeType: CanvasNodeType) => void;
+  setDrawerClosed: () => void;
+
+  // Director3d
+  addMannequin: (pose?: MannequinPose) => void;
+  removeMannequin: (id: string) => void;
+  updateMannequin: (id: string, updates: Partial<MannequinInstance>) => void;
+  addPlacedProp: (definitionId: string, position: [number, number, number]) => void;
+  removePlacedProp: (id: string) => void;
+  setActivePreset: (preset: CameraPreset | null) => void;
+  setSelectedPropCategory: (category: PropCategory) => void;
 }
 
 function normalizeHandleId(value: unknown): string | undefined {
@@ -556,6 +599,17 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
     currentImageUrl: null,
     imageList: [],
     currentIndex: 0,
+  },
+  director3dState: {
+    mannequins: [],
+    placedProps: [],
+    activePreset: CAMERA_PRESETS[0],
+    selectedPropCategory: 'indoor-furniture',
+  },
+  drawerState: {
+    isOpen: false,
+    nodeId: null,
+    nodeType: null,
   },
 
   onNodesChange: (changes) => {
@@ -1281,6 +1335,10 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
           state.activeToolDialog && deleteSet.has(state.activeToolDialog.nodeId)
             ? null
             : state.activeToolDialog,
+        drawerState:
+          state.drawerState.nodeId && deleteSet.has(state.drawerState.nodeId)
+            ? { isOpen: false, nodeId: null, nodeType: null }
+            : state.drawerState,
         history: {
           past: pushSnapshot(state.history.past, createSnapshot(state.nodes, state.edges)),
           future: [],
@@ -1580,6 +1638,7 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         edges: [],
         selectedNodeId: null,
         activeToolDialog: null,
+        drawerState: { isOpen: false, nodeId: null, nodeType: null },
         history: {
           past: pushSnapshot(state.history.past, createSnapshot(state.nodes, state.edges)),
           future: [],
@@ -1587,5 +1646,106 @@ export const useCanvasStore = create<CanvasState>((set, get) => ({
         dragHistorySnapshot: null,
       };
     });
+  },
+
+  // --- Drawer actions ---
+
+  setDrawerOpen: (nodeId, nodeType) => {
+    set({
+      drawerState: { isOpen: true, nodeId, nodeType },
+    });
+  },
+
+  setDrawerClosed: () => {
+    set({
+      drawerState: { isOpen: false, nodeId: null, nodeType: null },
+    });
+  },
+
+  // --- Director3d actions ---
+
+  addMannequin: (pose) => {
+    const poseOrDefault = pose ?? 'stand';
+    set((state) => {
+      // M-01: Pick first unused palette color to avoid duplicates after deletion
+      const existingColors = new Set(state.director3dState.mannequins.map((m) => m.color));
+      const nextColor = MANNEQUIN_PALETTE.find((c) => !existingColors.has(c))
+        ?? MANNEQUIN_PALETTE[state.director3dState.mannequins.length % MANNEQUIN_PALETTE.length];
+      const newMannequin: MannequinInstance = {
+        id: `mannequin-${crypto.randomUUID()}`,
+        position: [(Math.random() - 0.5) * 3, 0, (Math.random() - 0.5) * 3],
+        rotation: Math.random() * Math.PI * 2,
+        pose: poseOrDefault,
+        color: nextColor,
+      };
+      return {
+        director3dState: {
+          ...state.director3dState,
+          mannequins: [...state.director3dState.mannequins, newMannequin],
+        },
+      };
+    });
+  },
+
+  removeMannequin: (id) => {
+    set((state) => ({
+      director3dState: {
+        ...state.director3dState,
+        mannequins: state.director3dState.mannequins.filter((m) => m.id !== id),
+      },
+    }));
+  },
+
+  updateMannequin: (id, updates) => {
+    set((state) => ({
+      director3dState: {
+        ...state.director3dState,
+        mannequins: state.director3dState.mannequins.map((m) =>
+          m.id === id ? { ...m, ...updates } : m
+        ),
+      },
+    }));
+  },
+
+  addPlacedProp: (definitionId, position) => {
+    const newProp: PlacedPropInstance = {
+      id: `prop-${crypto.randomUUID()}`,
+      definitionId,
+      position,
+      rotation: Math.random() * Math.PI * 2,
+    };
+    set((state) => ({
+      director3dState: {
+        ...state.director3dState,
+        placedProps: [...state.director3dState.placedProps, newProp],
+      },
+    }));
+  },
+
+  removePlacedProp: (id) => {
+    set((state) => ({
+      director3dState: {
+        ...state.director3dState,
+        placedProps: state.director3dState.placedProps.filter((p) => p.id !== id),
+      },
+    }));
+  },
+
+  setActivePreset: (preset) => {
+    set((state) => ({
+      director3dState: {
+        ...state.director3dState,
+        activePreset: preset,
+      },
+    }));
+  },
+
+  setSelectedPropCategory: (category) => {
+    set((state) => ({
+      director3dState: {
+        ...state.director3dState,
+        selectedPropCategory: category,
+      },
+    }));
   },
 }));

@@ -261,5 +261,9 @@ export function nodeHasImage(node: CanvasNode | null | undefined): boolean {
     return Boolean(node.data.imageUrl);
   }
 
+  if (isDirector3dNode(node) || isVr360Node(node)) {
+    return Boolean(node.data.backgroundUrl);
+  }
+
   return false;
 }

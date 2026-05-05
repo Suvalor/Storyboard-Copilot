@@ -8,6 +8,7 @@ import { resolveNodeDisplayName } from '@/features/canvas/domain/nodeDisplay';
 import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canvas/ui/NodeHeader';
 import { useCanvasStore } from '@/stores/canvasStore';
 import { Vr360Scene } from '@/features/canvas/3d/Vr360Scene';
+import { prepareNodeImageFromFile } from '@/features/canvas/application/imageData';
 
 type Vr360NodeProps = NodeProps & {
   id: string;
@@ -31,9 +32,14 @@ export const Vr360Node = memo(({ id, data, selected }: Vr360NodeProps) => {
     (event: React.ChangeEvent<HTMLInputElement>) => {
       const file = event.target.files?.[0];
       if (!file) return;
-      const url = URL.createObjectURL(file);
-      updateNodeData(id, { backgroundUrl: url });
-      setShowScene(true);
+      void prepareNodeImageFromFile(file)
+        .then((prepared) => {
+          updateNodeData(id, { backgroundUrl: prepared.imageUrl });
+          setShowScene(true);
+        })
+        .catch((error) => {
+          console.error('[Vr360Node] Failed to prepare background image', error);
+        });
     },
     [id, updateNodeData],
   );
