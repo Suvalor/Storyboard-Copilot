@@ -23,6 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
+.vscode/
+.github/
+.claude/
+
 ComfyUI/
 ComfyUI_frontend/
 Henji-AI/

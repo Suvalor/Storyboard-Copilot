@@ -436,6 +436,10 @@
       "addShot": "添加机位",
       "deleteShot": "删除机位",
       "freeCamera": "自由相机"
+    },
+    "drawer": {
+      "hint": "双击节点本体进入 3D 编辑器",
+      "openEditor": "打开 3D 编辑器"
     }
   }
 }

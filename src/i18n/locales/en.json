@@ -436,6 +436,9 @@
       "addShot": "Add Shot",
       "deleteShot": "Delete Shot",
       "freeCamera": "Free Camera"
+    },
+    "drawer": {
+      "hint": "Double-click the node body to enter the 3D editor"
     }
   }
 }
