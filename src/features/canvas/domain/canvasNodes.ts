@@ -1,4 +1,5 @@
 import type { Edge, Node, XYPosition } from '@xyflow/react';
+import type { Director3dScene } from '@/features/canvas/3d-edit/domain/sceneSchema';
 
 export const CANVAS_NODE_TYPES = {
   upload: 'uploadNode',
@@ -143,7 +144,10 @@ export interface StoryboardGenNodeData {
 }
 
 export interface Director3dNodeData extends NodeDisplayData {
+  /** @deprecated Legacy field; new data should write to scene.background.url. Kept for backward compatibility. */
   backgroundUrl: string | null;
+  /** @since v0.1.14 -- Full 3D scene data. Optional; absent = use createDefaultScene(). */
+  scene?: Director3dScene;
 }
 
 export interface Vr360NodeData extends NodeDisplayData {

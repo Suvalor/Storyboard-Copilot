@@ -1,4 +1,4 @@
-import { memo, useCallback, useRef } from 'react';
+import { memo, useCallback, useMemo, useRef } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
 import { Box } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
@@ -9,6 +9,10 @@ import { NodeHeader, NODE_HEADER_FLOATING_POSITION_CLASS } from '@/features/canv
 import { useCanvasStore } from '@/stores/canvasStore';
 import { Director3dScene } from '@/features/canvas/3d/Director3dScene';
 import { prepareNodeImageFromFile } from '@/features/canvas/application/imageData';
+import { canvasEventBus } from '@/features/canvas/application/canvasServices';
+import type { SceneMannequin, SceneProp } from '@/features/canvas/3d-edit/domain/sceneSchema';
+import type { MannequinInstance } from '@/features/canvas/3d/mannequin';
+import type { PlacedPropInstance } from '@/stores/canvasStore';
 
 type Director3dNodeProps = NodeProps & {
   id: string;
@@ -26,10 +30,39 @@ export const Director3dNode = memo(({ id, data, selected }: Director3dNodeProps)
   const fileInputRef = useRef<HTMLInputElement>(null);
   const resolvedTitle = resolveNodeDisplayName(CANVAS_NODE_TYPES.director3d, data);
 
-  // Read director3d state from store
-  const mannequins = useCanvasStore((state) => state.director3dState.mannequins);
-  const placedProps = useCanvasStore((state) => state.director3dState.placedProps);
-  const activePreset = useCanvasStore((state) => state.director3dState.activePreset);
+  // Read scene data from node's own data.scene (preferred) with fallback
+  // to the global director3dState for backward compatibility during transition.
+  const globalDirector3dState = useCanvasStore((state) => state.director3dState);
+  const scene = data.scene;
+
+  // Map SceneMannequin[] -> MannequinInstance[] for the preview component.
+  const mannequins: MannequinInstance[] = useMemo(() => {
+    if (scene?.mannequins) {
+      return scene.mannequins.map((m: SceneMannequin): MannequinInstance => ({
+        id: m.id,
+        position: m.position,
+        rotation: m.rotationY,
+        pose: m.pose,
+        color: m.color,
+      }));
+    }
+    return globalDirector3dState.mannequins;
+  }, [scene, globalDirector3dState.mannequins]);
+
+  // Map SceneProp[] -> PlacedPropInstance[] for the preview component.
+  const placedProps: PlacedPropInstance[] = useMemo(() => {
+    if (scene?.props) {
+      return scene.props.map((p: SceneProp): PlacedPropInstance => ({
+        id: p.id,
+        definitionId: p.definitionId,
+        position: p.position,
+        rotation: p.rotationY,
+      }));
+    }
+    return globalDirector3dState.placedProps;
+  }, [scene, globalDirector3dState.placedProps]);
+
+  const activePreset = scene ? null : globalDirector3dState.activePreset;
 
   const showScene = Boolean(data.backgroundUrl);
 
@@ -48,6 +81,16 @@ export const Director3dNode = memo(({ id, data, selected }: Director3dNodeProps)
     [id, updateNodeData],
   );
 
+  /** Double-click on the node body enters edit mode. */
+  const handleDoubleClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (e.detail !== 2) return;
+      e.stopPropagation(); // prevent ReactFlow from responding
+      canvasEventBus.publish('director3d/enter-edit', { nodeId: id });
+    },
+    [id],
+  );
+
   return (
     <div
       className={`
@@ -58,6 +101,7 @@ export const Director3dNode = memo(({ id, data, selected }: Director3dNodeProps)
       `}
       style={{ width: DEFAULT_WIDTH, minHeight: MIN_HEIGHT }}
       onClick={() => setSelectedNode(id)}
+      onDoubleClick={handleDoubleClick}
     >
       <NodeHeader
         className={NODE_HEADER_FLOATING_POSITION_CLASS}

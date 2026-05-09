@@ -94,6 +94,17 @@ export interface CanvasEventMap {
   'director3d/export-depth': { nodeId: string };
   'director3d/export-result': { nodeId: string; kind: 'viewport' | 'depth'; dataUrl: string };
   'director3d/export-error': { nodeId: string; kind: 'viewport' | 'depth'; reason: string };
+
+  // Edit mode events
+  'director3d/enter-edit': { nodeId: string };
+  'director3d/exit-edit': { nodeId: string; reason: 'apply' | 'discard' };
+  'director3d/export-brief': { nodeId: string };
+  'director3d/export-brief-result': {
+    nodeId: string;
+    briefJson: string;
+    briefText: string;
+    thumbnails: { shotId: string; dataUrl: string }[];
+  };
 }
 
 export interface CanvasEventBus {

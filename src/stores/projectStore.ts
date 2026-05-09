@@ -8,6 +8,7 @@ import {
   type CanvasNode,
   type CanvasNodeData,
 } from './canvasStore';
+import type { Director3dScene } from '@/features/canvas/3d-edit/domain/sceneSchema';
 import {
   deleteProjectRecord,
   getProjectRecord,
@@ -107,6 +108,30 @@ function decodeImageReference(
   return imagePool[index] ?? null;
 }
 
+/** Map image URLs inside a Director3dScene (background.url + shots[].thumbnailDataUrl). */
+function mapDirector3dSceneImages(
+  scene: Director3dScene,
+  mapImageUrl: (imageUrl: string | null | undefined) => string | null | undefined
+): Director3dScene {
+  const background = scene.background
+    ? {
+        ...scene.background,
+        url: mapImageUrl(scene.background.url as string | null | undefined) ?? null,
+      }
+    : scene.background;
+
+  const shots = Array.isArray(scene.shots)
+    ? scene.shots.map((shot) => ({
+        ...shot,
+        thumbnailDataUrl: shot.thumbnailDataUrl
+          ? mapImageUrl(shot.thumbnailDataUrl as string | null | undefined) ?? null
+          : null,
+      }))
+    : scene.shots;
+
+  return { ...scene, background, shots };
+}
+
 function mapNodeImageReferences(
   nodes: CanvasNode[],
   mapImageUrl: (imageUrl: string | null | undefined) => string | null | undefined
@@ -145,6 +170,14 @@ function mapNodeImageReferences(
             mapImageUrl(frameRecord.previewImageUrl as string | null | undefined) ?? null,
         };
       });
+    }
+
+    // Director3dNodeData.scene -- map background.url and shot thumbnails
+    if ('scene' in nextData && nextData.scene && typeof nextData.scene === 'object') {
+      nextData.scene = mapDirector3dSceneImages(
+        nextData.scene as Director3dScene,
+        mapImageUrl
+      );
     }
 
     return {

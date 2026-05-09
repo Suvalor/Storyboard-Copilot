@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect, memo } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Box, X, Loader2 } from 'lucide-react';
+import { Box, X, Loader2, PenLine } from 'lucide-react';
 
 import { registerDrawerPanel } from '@/features/canvas/domain/drawerPanelRegistry';
 import { CANVAS_NODE_TYPES } from '@/features/canvas/domain/canvasNodes';
@@ -139,8 +139,19 @@ export const Director3dDrawerPanel = memo(function Director3dDrawerPanel({ nodeI
     canvasEventBus.publish('director3d/export-depth', { nodeId });
   }, [nodeId]);
 
+  // --- Open editor ---
+  const handleOpenEditor = useCallback(() => {
+    canvasEventBus.publish('director3d/enter-edit', { nodeId });
+  }, [nodeId]);
+
   return (
     <div className="flex flex-col gap-3">
+      {/* Open editor button */}
+      <UiButton variant="primary" size="sm" onClick={handleOpenEditor}>
+        <PenLine className="h-3.5 w-3.5 mr-1.5" />
+        {t('director3dEdit.openEditor')}
+      </UiButton>
+
       {/* Tab bar */}
       <nav
         className="flex shrink-0 gap-0 border-b"

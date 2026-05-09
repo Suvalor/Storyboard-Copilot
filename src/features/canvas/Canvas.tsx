@@ -4,6 +4,8 @@ import {
   useEffect,
   useMemo,
   useRef,
+  lazy,
+  Suspense,
   type MouseEvent as ReactMouseEvent,
 } from 'react';
 import {
@@ -59,6 +61,11 @@ import './ui/drawerPanels/Director3dDrawerPanel';
 import { NodeToolDialog } from './ui/NodeToolDialog';
 import { ImageViewerModal } from './ui/ImageViewerModal';
 import { MissingApiKeyHint } from '@/features/settings/MissingApiKeyHint';
+import { regenerateSceneIds } from '@/features/canvas/3d-edit/domain/sceneCodec';
+import type { Director3dScene } from '@/features/canvas/3d-edit/domain/sceneSchema';
+
+// Lazy-load the 3D edit modal to avoid pulling three.js into the main bundle.
+const LazyDirector3dEditModal = lazy(() => import('./3d-edit/Director3dEditModal'));
 
 const DEFAULT_VIEWPORT: Viewport = { x: 0, y: 0, zoom: 1 };
 
@@ -1137,6 +1144,13 @@ export function Canvas() {
       const sizeMap = new Map<string, { width: number; height: number }>();
       for (const sourceNode of sourceNodes) {
         const data = cloneNodeData(sourceNode.data);
+        // Regenerate scene IDs for director3d nodes to avoid ID collisions
+        // between the original and duplicated node's mannequins/props/shots/annotations.
+        if (sourceNode.type === 'director3dNode' && (data as { scene?: unknown }).scene) {
+          (data as { scene: unknown }).scene = regenerateSceneIds(
+            (data as { scene: Director3dScene }).scene,
+          );
+        }
         if ('isGenerating' in (data as Record<string, unknown>)) {
           (data as { isGenerating?: boolean }).isGenerating = false;
         }
@@ -1708,6 +1722,10 @@ export function Canvas() {
       <NodeToolDialog />
 
       <NodePropertyDrawer />
+
+      <Suspense fallback={null}>
+        <LazyDirector3dEditModal />
+      </Suspense>
 
       <ImageViewerModal
         open={imageViewer.isOpen}

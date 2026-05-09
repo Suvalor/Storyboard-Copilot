@@ -69,11 +69,15 @@ export interface PlacedPropInstance {
   rotation: number;
 }
 
-/** 3D director node state (not persisted in MVP). */
+/** @deprecated Global director3d state -- will be removed once scene data is fully migrated to Director3dNodeData.scene. Kept for backward compatibility during transition. */
 export interface Director3dState {
+  /** @deprecated Use Director3dNodeData.scene.mannequins instead. */
   mannequins: MannequinInstance[];
+  /** @deprecated Use Director3dNodeData.scene.props instead. */
   placedProps: PlacedPropInstance[];
+  /** @deprecated Use Director3dNodeData.scene.activeShotId + shots instead. */
   activePreset: CameraPreset | null;
+  /** @deprecated Use Director3dNodeData.scene.props category filtering instead. */
   selectedPropCategory: PropCategory;
 }
 
@@ -107,6 +111,7 @@ interface CanvasState {
     imageList: string[];
     currentIndex: number;
   };
+  /** @deprecated Global 3D director state; migrate per-node state to Director3dNodeData.scene. */
   director3dState: Director3dState;
   drawerState: DrawerState;
 

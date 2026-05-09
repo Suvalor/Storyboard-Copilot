@@ -368,6 +368,74 @@
   "errorDialog": {
     "detailsTitle": "错误详情",
     "copyReport": "复制报错信息"
+  },
+  "director3dEdit": {
+    "toolbar": {
+      "apply": "应用",
+      "cancel": "取消",
+      "undo": "撤销",
+      "redo": "重做",
+      "exportBrief": "导出场景简报"
+    },
+    "gizmo": {
+      "translate": "移动",
+      "rotate": "旋转",
+      "scale": "缩放"
+    },
+    "confirm": {
+      "discard": "放弃修改",
+      "discardMessage": "当前有未保存的修改，确定要放弃吗？"
+    },
+    "openEditor": "打开编辑器",
+    "panel": {
+      "assets": "资产面板",
+      "inspector": "属性检查器",
+      "shots": "机位栏"
+    },
+    "briefDialog": {
+      "title": "场景简报",
+      "tabJson": "JSON",
+      "tabText": "文本",
+      "tabThumbnails": "缩略图",
+      "copy": "复制",
+      "copySuccess": "已复制",
+      "deriveNode": "派生导出节点"
+    },
+    "annotation": {
+      "title": "标注",
+      "add": "添加",
+      "textPlaceholder": "输入标注文本...",
+      "languageZh": "中文",
+      "languageEn": "英文",
+      "delete": "删除",
+      "empty": "暂无标注"
+    },
+    "addCharacterHint": "点击添加人物",
+    "backgroundUrl": "背景 URL",
+    "color": "颜色",
+    "delete": "删除",
+    "exposure": "曝光度",
+    "label": "标签",
+    "labelPlaceholder": "输入标签...",
+    "mannequin": "人物",
+    "noPropsFound": "未找到道具",
+    "pose": "姿势",
+    "prop": "道具",
+    "rotationY": "Y 轴旋转",
+    "scale": "缩放",
+    "sceneSettings": "场景设置",
+    "searchProps": "搜索道具...",
+    "showGrid": "显示网格",
+    "tabCharacters": "人物",
+    "tabProps": "道具",
+    "pose_stand": "站姿",
+    "pose_sit-chair": "坐姿",
+    "pose_lean-45": "倚靠",
+    "pose_lie-flat": "卧姿",
+    "shotsBar": {
+      "addShot": "添加机位",
+      "deleteShot": "删除机位",
+      "freeCamera": "自由相机"
+    }
   }
 }
-

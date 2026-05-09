@@ -368,5 +368,74 @@
   "errorDialog": {
     "detailsTitle": "Error details",
     "copyReport": "Copy error report"
+  },
+  "director3dEdit": {
+    "toolbar": {
+      "apply": "Apply",
+      "cancel": "Cancel",
+      "undo": "Undo",
+      "redo": "Redo",
+      "exportBrief": "Export Scene Brief"
+    },
+    "gizmo": {
+      "translate": "Translate",
+      "rotate": "Rotate",
+      "scale": "Scale"
+    },
+    "confirm": {
+      "discard": "Discard Changes",
+      "discardMessage": "You have unsaved changes. Are you sure you want to discard them?"
+    },
+    "openEditor": "Open Editor",
+    "panel": {
+      "assets": "Asset Panel",
+      "inspector": "Property Inspector",
+      "shots": "Shot Bar"
+    },
+    "briefDialog": {
+      "title": "Scene Brief",
+      "tabJson": "JSON",
+      "tabText": "Text",
+      "tabThumbnails": "Thumbnails",
+      "copy": "Copy",
+      "copySuccess": "Copied",
+      "deriveNode": "Derive Export Node"
+    },
+    "annotation": {
+      "title": "Annotations",
+      "add": "Add",
+      "textPlaceholder": "Enter annotation text...",
+      "languageZh": "Chinese",
+      "languageEn": "English",
+      "delete": "Delete",
+      "empty": "No annotations yet"
+    },
+    "addCharacterHint": "Click to add character",
+    "backgroundUrl": "Background URL",
+    "color": "Color",
+    "delete": "Delete",
+    "exposure": "Exposure",
+    "label": "Label",
+    "labelPlaceholder": "Enter label...",
+    "mannequin": "Character",
+    "noPropsFound": "No props found",
+    "pose": "Pose",
+    "prop": "Prop",
+    "rotationY": "Y Rotation",
+    "scale": "Scale",
+    "sceneSettings": "Scene Settings",
+    "searchProps": "Search props...",
+    "showGrid": "Show Grid",
+    "tabCharacters": "Characters",
+    "tabProps": "Props",
+    "pose_stand": "Standing",
+    "pose_sit-chair": "Sitting",
+    "pose_lean-45": "Leaning",
+    "pose_lie-flat": "Lying Down",
+    "shotsBar": {
+      "addShot": "Add Shot",
+      "deleteShot": "Delete Shot",
+      "freeCamera": "Free Camera"
+    }
   }
 }

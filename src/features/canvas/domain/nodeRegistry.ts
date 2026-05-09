@@ -17,6 +17,7 @@ import {
 } from './canvasNodes';
 import { DEFAULT_NODE_DISPLAY_NAME } from './nodeDisplay';
 import { DEFAULT_IMAGE_MODEL_ID } from '../models';
+import { createDefaultScene } from '@/features/canvas/3d-edit/domain/sceneCodec';
 
 export type MenuIconKey = 'upload' | 'sparkles' | 'layout' | 'text' | 'cube' | 'vr';
 
@@ -275,6 +276,7 @@ const director3dNodeDefinition: CanvasNodeDefinition<Director3dNodeData> = {
   createDefaultData: () => ({
     displayName: DEFAULT_NODE_DISPLAY_NAME[CANVAS_NODE_TYPES.director3d],
     backgroundUrl: null,
+    scene: createDefaultScene(),
   }),
 };
 
